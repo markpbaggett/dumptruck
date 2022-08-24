@@ -7,15 +7,29 @@ from lxml.builder import ElementMaker
 
 class DataSetInjector:
     """Injects parts into a dataset."""
-    def __init__(self, path_to_files, parent_pid):
+    def __init__(self, path_to_files, parent_pid, namespace, collection):
         self.parent_directory = path_to_files
         self.parent_pid = parent_pid
+        self.namespace = namespace
+        self.collection = collection
         self.files_list = self.__crawl_path_to_files(path_to_files)
 
     @staticmethod
     def __crawl_path_to_files(path):
         for path, directory, file_objects in os.walk(path):
             return [file_object for file_object in file_objects]
+
+    def ingest_parts(self):
+        for file_object in self.files_list:
+            x = DataSetPart(
+                path=f"{self.parent_directory}/{file_object}",
+                namespace=self.namespace,
+                label=file_object,
+                collection=self.collection,
+                state="A",
+                desriptive_metadata=""
+            ).new()
+            print(f"Ingested {x}.")
 
 
 class FedoraObject:
@@ -271,11 +285,17 @@ class DataSetPart(FedoraObject):
 
 
 if __name__ == "__main__":
-    x = DataSetPart(
-        path="fedora/fedora.py",
-        namespace="test",
-        label="Test load of Fedora.py",
-        collection="islandora:test",
-        state="A",
-        desriptive_metadata=""
-    ).new()
+    # x = DataSetPart(
+    #     path="fedora/fedora.py",
+    #     namespace="test",
+    #     label="Test load of Fedora.py",
+    #     collection="islandora:test",
+    #     state="A",
+    #     desriptive_metadata=""
+    # ).new()
+    DataSetInjector(
+        "/home/mark/for_kim",
+        "islandora:test",
+        "test",
+        "islandora:test"
+    ).ingest_parts()
