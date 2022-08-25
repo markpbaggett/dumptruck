@@ -2,14 +2,12 @@ import requests
 import magic
 import os
 from urllib.parse import quote
-from lxml.builder import ElementMaker
 
 
 class DataSetInjector:
     """Injects parts into a dataset."""
-    def __init__(self, path_to_files, parent_pid, namespace, collection, parent):
+    def __init__(self, path_to_files, namespace, collection, parent):
         self.parent_directory = path_to_files
-        self.parent_pid = parent_pid
         self.namespace = namespace
         self.collection = collection
         self.parent = parent
@@ -260,7 +258,7 @@ class DataSetPart(FedoraObject):
 
     def add_policy(self, pid):
         # Make sure to set this first
-        policy = self.add_managed_datastream(pid, "POLICY", "policies/default_policy.xml")
+        policy = self.add_managed_datastream(pid, "POLICY", "policies/POLICY.xml")
         if policy == "":
             raise Exception(
                 f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
@@ -318,9 +316,8 @@ if __name__ == "__main__":
     #     desriptive_metadata=""
     # ).new()
     DataSetInjector(
-        "/home/mark/for_kim",
-        "islandora:test",
-        "test",
-        "islandora:test",
-        parent="test:16"
+        path_to_files="/home/mark/for_kim",
+        namespace="test",
+        collection="islandora:test",
+        parent="test:21"
     ).ingest_parts()
