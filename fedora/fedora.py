@@ -7,11 +7,12 @@ from lxml.builder import ElementMaker
 
 class DataSetInjector:
     """Injects parts into a dataset."""
-    def __init__(self, path_to_files, parent_pid, namespace, collection):
+    def __init__(self, path_to_files, parent_pid, namespace, collection, parent):
         self.parent_directory = path_to_files
         self.parent_pid = parent_pid
         self.namespace = namespace
         self.collection = collection
+        self.parent = parent
         self.files_list = self.__crawl_path_to_files(path_to_files)
 
     @staticmethod
@@ -20,6 +21,7 @@ class DataSetInjector:
             return [file_object for file_object in file_objects]
 
     def ingest_parts(self):
+        i = 1
         for file_object in self.files_list:
             x = DataSetPart(
                 path=f"{self.parent_directory}/{file_object}",
@@ -27,9 +29,10 @@ class DataSetInjector:
                 label=file_object,
                 collection=self.collection,
                 state="A",
-                desriptive_metadata=""
-            ).new()
+                parent=self.parent
+            ).new(i)
             print(f"Ingested {x}.")
+            i += 1
 
 
 class FedoraObject:
@@ -167,7 +170,6 @@ class FedoraObject:
             )
         if alt_label == "":
             alt_label = dsid
-        print(alt_label)
         mime = magic.Magic(mime=True)
         upload_file = {
             "file": (file, open(file, "rb"), mime.from_file(file), {"Expires": "0"})
@@ -195,7 +197,7 @@ class DataSetPart(FedoraObject):
             label,
             collection,
             state,
-            desriptive_metadata,
+            parent,
             fedora="http://localhost:8080",
             auth=("fedoraAdmin", "fedoraAdmin"),
     ):
@@ -204,7 +206,7 @@ class DataSetPart(FedoraObject):
         self.label = label
         self.collection = collection
         self.state = state
-        self.original_metadata = desriptive_metadata
+        self.parent = parent
         super().__init__(fedora, auth)
 
     def add_to_collection(self, pid):
@@ -225,6 +227,26 @@ class DataSetPart(FedoraObject):
             "info:fedora/fedora-system:def/model#hasModel",
             "info:fedora/islandora:binaryObjectCModel",
             is_literal="false",
+        )
+
+    def __assign_a_parent_dataset(self, pid, parent):
+        """Assigns a parent to the object"""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            "info:fedora/fedora-system:def/relations-external#isConstituentOf",
+            f"info:fedora/{parent}",
+            is_literal="false",
+        )
+
+    def __add_sequence_number(self, pid, parent, sequence_number):
+        """Assigns a sequence number to the object"""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            f"http://islandora.ca/ontology/relsext#isSequenceNumberOf{parent.replace(':','_')}",
+            str(sequence_number).rstrip(),
+            is_literal="true",
         )
 
     def add_primary_object(self, pid):
@@ -272,7 +294,7 @@ class DataSetPart(FedoraObject):
             )
         return mods
 
-    def new(self):
+    def new(self, sequence_number):
         pid = self.ingest(self.namespace, self.label, self.state)
         self.add_to_collection(pid)
         self.assign_binary_content_model(pid)
@@ -281,6 +303,8 @@ class DataSetPart(FedoraObject):
         self.add_thumbnail(pid)
         self.add_policy(pid)
         self.add_mods(pid)
+        self.__assign_a_parent_dataset(pid, self.parent)
+        self.__add_sequence_number(pid, self.parent, sequence_number)
         return pid
 
 
@@ -297,5 +321,6 @@ if __name__ == "__main__":
         "/home/mark/for_kim",
         "islandora:test",
         "test",
-        "islandora:test"
+        "islandora:test",
+        parent="test:16"
     ).ingest_parts()
