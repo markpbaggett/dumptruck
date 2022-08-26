@@ -18,8 +18,7 @@ class DataSetInjector:
         for path, directory, file_objects in os.walk(path):
             return [file_object for file_object in file_objects]
 
-    def ingest_parts(self):
-        i = 1
+    def ingest_parts(self, starting_sequence_number=1):
         for file_object in self.files_list:
             x = DataSetPart(
                 path=f"{self.parent_directory}/{file_object}",
@@ -28,9 +27,9 @@ class DataSetInjector:
                 collection=self.collection,
                 state="A",
                 parent=self.parent
-            ).new(i)
+            ).new(starting_sequence_number)
             print(f"Ingested {x}.")
-            i += 1
+            starting_sequence_number += 1
 
 
 class FedoraObject:
