@@ -19,7 +19,9 @@ class FedoraObject:
         checksum_type="DEFAULT",
         alt_label=""
     ):
-        """Adds an internally managed datastream.
+        """
+        Adds an internally managed datastream.
+
         This is not a one to one vesion of addDatastream.  It has been stripped down to fit one use case: internally
         managed content.  I'll add other methods if other use cases arise.
         Args:
@@ -81,4 +83,6 @@ class FedoraObject:
 if __name__ == "__main__":
     with open('to_restrict.txt', 'r') as to_restrict:
         for pid in to_restrict:
-            print(pid.strip())
+            current_pid = pid.strip().split('/')[1]
+            x = FedoraObject().add_policy(current_pid)
+            print(f"Adding Policy for {current_pid}.")
