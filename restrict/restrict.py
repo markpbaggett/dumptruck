@@ -67,7 +67,7 @@ class FedoraObject:
         else:
             raise Exception(
                 f"\nFailed to create {dsid} datastream on {pid} with {file} as content. Fedora returned this"
-                f"status code: {r.status_code}."
+                f" status code: {r.status_code}."
             )
 
     def add_policy(self, pid):
@@ -81,8 +81,12 @@ class FedoraObject:
 
 
 if __name__ == "__main__":
-    with open('to_restrict.txt', 'r') as to_restrict:
+    restricted = []
+    with open('wpa_tva_dogs_and_burials.txt', 'r') as to_restrict:
         for pid in to_restrict:
-            current_pid = pid.strip().split('/')[1]
-            x = FedoraObject().add_policy(current_pid)
-            print(f"Adding Policy for {current_pid}.")
+            current_pid = pid.strip()
+            if current_pid not in restricted:
+                x = FedoraObject().add_policy(current_pid)
+                print(f"Adding Policy for {current_pid}.")
+                restricted.append(current_pid)
+    print(f"Restricted {len(restricted)} objects.")
