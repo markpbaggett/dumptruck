@@ -185,6 +185,24 @@ class FedoraObject:
                 f"status code: {r.status_code}."
             )
 
+    def replace_datastream(self, pid, dsid, new_file):
+        mime = magic.Magic(mime=True)
+        upload_file = {
+            "file": (new_file, open(new_file, "rb"), mime.from_file(new_file), {"Expires": "0"})
+        }
+        r = requests.post(
+            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}/",
+            auth=self.auth,
+            files=upload_file,
+        )
+        if r.status_code == 201:
+            return r.status_code
+        else:
+            raise Exception(
+                f"\nFailed to replace {dsid} datastream on {pid} with {new_file} as content. Fedora returned this"
+                f" status code: {r.status_code}."
+            )
+
 
 class DataSetPart(FedoraObject):
     def __init__(
