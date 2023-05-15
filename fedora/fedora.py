@@ -191,7 +191,7 @@ class FedoraObject:
             "file": (new_file, open(new_file, "rb"), mime.from_file(new_file), {"Expires": "0"})
         }
         r = requests.post(
-            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}/",
+            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}?dsLabel={new_file.split('/')[-1]}",
             auth=self.auth,
             files=upload_file,
         )
