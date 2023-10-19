@@ -2,6 +2,7 @@ import requests
 import magic
 import os
 from urllib.parse import quote
+import xmltodict
 
 
 class DataSetInjector:
@@ -323,18 +324,100 @@ class DataSetPart(FedoraObject):
         return pid
 
 
+class CompoundObject(FedoraObject):
+    def __init__(
+            self,
+            mods,
+            dc,
+            namespace,
+            collection,
+            state,
+            fedora="http://localhost:8080",
+            auth=("fedoraAdmin", "fedoraAdmin"),
+    ):
+        self.mods = mods
+        self.dc = dc
+        self.namespace = namespace
+        self.label = self.find_label()
+        self.collection = collection
+        self.state = state
+        super().__init__(fedora, auth)
+
+    def find_label(self):
+        with open(self.mods, 'r') as file:
+            xml_data = file.read()
+        xml_dict = xmltodict.parse(xml_data)
+        return xml_dict['mods']['titleInfo']['title']
+
+    def add_to_collection(self, pid):
+        """Adds the object to a collection in Fedora."""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            "info:fedora/fedora-system:def/relations-external#isMemberOfCollection",
+            f"info:fedora/{self.collection}",
+            is_literal="false",
+        )
+
+    def assign_compound_content_model(self, pid):
+        """Assigns binary content model to digital object."""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            "info:fedora/fedora-system:def/model#hasModel",
+            "info:fedora/islandora:compoundCModel",
+            is_literal="false",
+        )
+
+    def add_thumbnail(self, pid):
+        # Make sure to set this first
+        thumbnail = self.add_managed_datastream(pid, "TN", "thumbnail/thumbnail.png")
+        if thumbnail == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
+            )
+        return thumbnail
+
+    def add_mods(self, pid):
+        # Make sure to set this first
+        mods = self.add_managed_datastream(pid, "MODS", self.mods)
+        if mods == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found at {self.mods}."
+            )
+        return mods
+
+    def add_dc(self, pid):
+        # Make sure to set this first
+        mods = self.add_managed_datastream(pid, "DC", self.dc)
+        if mods == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found at {self.dc}."
+            )
+        return mods
+
+    def new(self):
+        pid = self.ingest(self.namespace, self.label, self.state)
+        print(pid)
+        self.add_to_collection(pid)
+        self.assign_compound_content_model(pid)
+        self.change_versioning(pid, "RELS-EXT", "true")
+        self.add_mods(pid)
+        self.add_dc(pid)
+        return pid
+
+
 if __name__ == "__main__":
-    # x = DataSetPart(
-    #     path="fedora/fedora.py",
-    #     namespace="test",
-    #     label="Test load of Fedora.py",
-    #     collection="islandora:test",
-    #     state="A",
-    #     desriptive_metadata=""
-    # ).new()
-    DataSetInjector(
-        path_to_files="/home/mark/for_kim",
-        namespace="test",
-        collection="islandora:test",
-        parent="test:21"
-    ).ingest_parts()
+    mods_path = "/home/mbagget1/mark_metadata"
+    dc_path = "/home/mbagget1/mark_dc"
+    for path, directories, files in os.walk(mods_path):
+        for file in files:
+            print(file)
+            x = CompoundObject(
+                mods=f'{mods_path}/{file}',
+                dc=f'{dc_path}/{file}',
+                namespace="delaney",
+                collection="collections:delaney",
+                state="A",
+            ).new()
+
