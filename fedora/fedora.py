@@ -408,16 +408,16 @@ class CompoundObject(FedoraObject):
 
 
 if __name__ == "__main__":
-    mods_path = "/home/mbagget1/mark_metadata"
-    dc_path = "/home/mbagget1/mark_dc"
+    mods_path = "/Users/markbaggett/metadata/wallace/cleaned-data/modsxml/compounds/real"
+    dc_path = "/Users/markbaggett/metadata/wallace/cleaned-data/modsxml/compounds/real_dc"
     for path, directories, files in os.walk(mods_path):
         for file in files:
             print(file)
             x = CompoundObject(
                 mods=f'{mods_path}/{file}',
                 dc=f'{dc_path}/{file}',
-                namespace="delaney",
-                collection="collections:delaney",
+                namespace="wallace",
+                collection="collections:wallace",
                 state="A",
             ).new()
 
